@@ -54,5 +54,4 @@ dkms.conf
 .vscode*
 SRPMS
 RPMS
-BUILDROOT
 *.drawio.bkp
