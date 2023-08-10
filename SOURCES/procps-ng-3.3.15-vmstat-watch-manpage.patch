@@ -1,0 +1,41 @@
+commit 354b5a56bf2ea831427ab8268ec7101bd3870f8e
+Author: Jan Rybar <jrybar@redhat.com>
+Date:   Thu Apr 30 17:06:18 2020 +0200
+
+    vmstat and watch manpage slight fixes
+    
+    vmstat - align wording with proc manpage to clarify ambiguities  (rhbz#1796043)
+    watch - manpage presumes ntp tools are present by default (which they're not on rpm and deb distros, rhbz#1583669)
+
+diff --git a/vmstat.8 b/vmstat.8
+index e408bca..dcc1b1e 100644
+--- a/vmstat.8
++++ b/vmstat.8
+@@ -93,7 +93,7 @@ Display help and exit.
+ .B "Procs"
+ .nf
+ r: The number of runnable processes (running or waiting for run time).
+-b: The number of processes in uninterruptible sleep.
++b: The number of processes blocked waiting for I/O to complete.
+ .fi
+ .PP
+ .SS
+diff --git a/watch.1 b/watch.1
+index 256c36b..e06e04e 100644
+--- a/watch.1
++++ b/watch.1
+@@ -34,7 +34,7 @@ every
+ .I interval
+ seconds. Try it with
+ .B ntptime
+-and notice how the fractional seconds stays (nearly) the same, as opposed to
++(if present) and notice how the fractional seconds stays (nearly) the same, as opposed to
+ normal mode where they continuously increase.
+ .TP
+ \fB\-t\fR, \fB\-\-no\-title\fR
+@@ -190,4 +190,4 @@ watch uname \-r
+ .I \-p
+ isn't guaranteed to work across reboots, especially in the face of
+ .B ntpdate
+-or other bootup time-changing mechanisms)
++(if present) or other bootup time-changing mechanisms)

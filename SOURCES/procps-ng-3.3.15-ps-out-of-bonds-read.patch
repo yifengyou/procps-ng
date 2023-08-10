@@ -1,0 +1,23 @@
+diff --git a/ps/display.c b/ps/display.c
+index 1927fd6..e7ab351 100644
+--- a/ps/display.c
++++ b/ps/display.c
+@@ -357,7 +357,7 @@ static void simple_spew(void){
+   if (selection_list && selection_list->typecode == SEL_PID_QUICK) {
+     flags |= PROC_PID;
+ 
+-    pidlist = (pid_t*) malloc(selection_list->n * sizeof(pid_t));
++    pidlist = (pid_t*) malloc((selection_list->n + 1) * sizeof(pid_t));
+     if (!pidlist) {
+       fprintf(stderr, _("error: not enough memory\n"));
+       exit(1);
+@@ -366,6 +366,9 @@ static void simple_spew(void){
+     for (i = 0; i < selection_list->n; i++) {
+       pidlist[i] = selection_list->u[selection_list->n-i-1].pid;
+     }
++
++    // delimit the array with nul object (0); RHBZ#2153813
++    pidlist[selection_list->n] = (pid_t)0;
+   }
+ 
+   ptp = openproc(flags, pidlist);

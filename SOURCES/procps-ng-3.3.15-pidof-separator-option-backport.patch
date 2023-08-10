@@ -1,0 +1,13 @@
+diff --git a/pidof.c b/pidof.c
+index 7fdf27a..2166265 100644
+--- a/pidof.c
++++ b/pidof.c
+@@ -300,7 +300,7 @@ int main (int argc, char **argv)
+ 		{"check-root", no_argument, NULL, 'c'},
+ 		{"single-shot", no_argument, NULL, 's'},
+ 		{"omit-pid", required_argument, NULL, 'o'},
+-		{"separator", required_argument, NULL, 's'},
++		{"separator", required_argument, NULL, 'S'},
+ 		{"with-workers", no_argument, NULL, 'w'},
+ 		{"help", no_argument, NULL, 'h'},
+ 		{"version", no_argument, NULL, 'V'},

@@ -1,0 +1,40 @@
+From 7eade2544e1c45bc516744aeaccc45df1d8f42df Mon Sep 17 00:00:00 2001
+From: Kyle Walker <kwalker@redhat.com>
+Date: Tue, 11 Feb 2020 14:30:39 -0500
+Subject: [PATCH] whattime: Refactor the pretty-print evaluation
+
+This avoids rounding errors such as in the case of 364 days of uptime which
+results in only output that prints at the hour and below.
+---
+ proc/whattime.c | 15 ++++++++++++---
+ 1 file changed, 12 insertions(+), 3 deletions(-)
+
+diff --git a/proc/whattime.c b/proc/whattime.c
+index c223cad..3e1b65c 100644
+--- a/proc/whattime.c
++++ b/proc/whattime.c
+@@ -69,9 +69,18 @@ char *sprint_uptime(int human_readable) {
+ 
+   if (human_readable) {
+     updecades = (int) uptime_secs / (60*60*24*365*10);
+-    upyears = ((int) uptime_secs / (60*60*24*365)) % 10;
+-    upweeks = ((int) uptime_secs / (60*60*24*7)) % 52;
+-    updays = ((int) uptime_secs / (60*60*24)) % 7;
++    if (updecades)
++        uptime_secs -= updecades * (60*60*24*365*10);
++
++    upyears = (int) uptime_secs / (60*60*24*365);
++    if (upyears)
++        uptime_secs -= upyears * (60*60*24*365);
++
++    upweeks = (int) uptime_secs / (60*60*24*7);
++    if (upweeks)
++        uptime_secs -= upweeks * (60*60*24*7);
++
++    updays = (int) uptime_secs / (60*60*24);
+   }
+   else
+     updays = (int) uptime_secs / (60*60*24);
+-- 
+2.24.1
+

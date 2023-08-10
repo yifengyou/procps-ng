@@ -1,0 +1,112 @@
+From d9b3415d2a761cb7669a67f5309665335d5eb4c4 Mon Sep 17 00:00:00 2001
+From: rpm-build <rpm-build>
+Date: Mon, 9 Nov 2020 16:10:22 +0100
+Subject: [PATCH] New '-w' option for kernel workers.
+
+---
+ pidof.1 |  3 +++
+ pidof.c | 17 ++++++++++++-----
+ 2 files changed, 15 insertions(+), 5 deletions(-)
+
+diff --git a/pidof.1 b/pidof.1
+index 1368704..c85c088 100644
+--- a/pidof.1
++++ b/pidof.1
+@@ -45,6 +45,9 @@ the current root directory of processes they do not own.
+ .IP \-x
+ Scripts too - this causes the program to also return process id's of
+ shells running the named scripts.
++.IP \-w
++Show also processes that do not have visible command line (e.g. kernel
++worker threads).
+ .IP "-o \fIomitpid\fP"
+ Tells \fIpidof\fP to omit processes with that process id. The special
+ pid \fB%PPID\fP can be used to name the parent process of the \fIpidof\fP
+diff --git a/pidof.c b/pidof.c
+index 94e19bb..7fdf27a 100644
+--- a/pidof.c
++++ b/pidof.c
+@@ -55,6 +55,8 @@ static char *program = NULL;
+ static int opt_single_shot    = 0;  /* -s */
+ static int opt_scripts_too    = 0;  /* -x */
+ static int opt_rootdir_check  = 0;  /* -c */
++static int opt_with_workers   = 0;  /* -w */
++
+ 
+ static char *pidof_root = NULL;
+ 
+@@ -69,6 +71,7 @@ static int __attribute__ ((__noreturn__)) usage(int opt)
+ 	fputs(_(" -s, --single-shot         return one PID only\n"), fp);
+ 	fputs(_(" -c, --check-root          omit processes with different root\n"), fp);
+ 	fputs(_(" -x                        also find shells running the named scripts\n"), fp);
++	fputs(_(" -w, --with-workers        show kernel workers too\n"), fp);
+ 	fputs(_(" -o, --omit-pid <PID,...>  omit processes with PID\n"), fp);
+ 	fputs(_(" -S, --separator SEP       use SEP as separator put between PIDs"), fp);
+ 	fputs(USAGE_SEPARATOR, fp);
+@@ -142,7 +145,6 @@ static void select_procs (void)
+ 	static int size = 0;
+ 	char *cmd_arg0, *cmd_arg0base;
+ 	char *cmd_arg1, *cmd_arg1base;
+-	char *stat_cmd;
+ 	char *program_base;
+ 	char *root_link;
+ 	char *exe_link;
+@@ -168,10 +170,9 @@ static void select_procs (void)
+ 			}
+ 		}
+ 
+-		if (!is_omitted(task.XXXID)) {
++		if (!is_omitted(task.XXXID) && ((task.cmdline && *task.cmdline) || opt_with_workers)) {
+ 
+ 			cmd_arg0 = (task.cmdline && *task.cmdline) ? *task.cmdline : "\0";
+-			stat_cmd = task.cmd ? task.cmd : "\0";
+ 
+ 			/* processes starting with '-' are login shells */
+ 			if (*cmd_arg0 == '-') {
+@@ -193,7 +194,7 @@ static void select_procs (void)
+ 			    !strcmp(program_base, cmd_arg0) ||
+ 			    !strcmp(program, cmd_arg0) ||
+ 
+-			    !strcmp(program, stat_cmd) ||
++			    (opt_with_workers && !strcmp(program, task.cmd)) ||
+ 
+ 			    !strcmp(program, exe_link_base) ||
+ 			    !strcmp(program, exe_link))
+@@ -293,13 +294,14 @@ int main (int argc, char **argv)
+ 	int first_pid = 1;
+ 
+ 	const char *separator = " ";
+-	const char *opts = "scnxmo:S:?Vh";
++	const char *opts = "scnxwmo:S:?Vh";
+ 
+ 	static const struct option longopts[] = {
+ 		{"check-root", no_argument, NULL, 'c'},
+ 		{"single-shot", no_argument, NULL, 's'},
+ 		{"omit-pid", required_argument, NULL, 'o'},
+ 		{"separator", required_argument, NULL, 's'},
++		{"with-workers", no_argument, NULL, 'w'},
+ 		{"help", no_argument, NULL, 'h'},
+ 		{"version", no_argument, NULL, 'V'},
+ 		{NULL, 0, NULL, 0}
+@@ -325,6 +327,9 @@ int main (int argc, char **argv)
+ 		case 'x':
+ 			opt_scripts_too = 1;
+ 			break;
++		case 'w':
++			opt_with_workers = 1;
++			break;
+ 		case 'c':
+ 			if (geteuid() == 0) {
+ 				opt_rootdir_check = 1;
+@@ -358,6 +363,8 @@ int main (int argc, char **argv)
+ 
+ 		program = argv[optind++];
+ 
++		if (*program == '\0') continue;
++
+ 		select_procs();	/* get the list of matching processes */
+ 
+ 		if (proc_count) {
+-- 
+2.25.4
+

@@ -1,0 +1,28 @@
+commit c833a6241893c7e566a5eed762661942e4cd90d3
+Author: Todd Lewis <utoddl@gmail.com>
+Date:   Mon Oct 29 18:33:48 2018 +0000
+
+    Fix user and group name to number conversion for uid/gid above 2^31.
+
+diff --git a/pgrep.c b/pgrep.c
+index bde7448..8b82a54 100644
+--- a/pgrep.c
++++ b/pgrep.c
+@@ -280,7 +280,7 @@ static int conv_uid (const char *restrict name, struct el *restrict e)
+ 		xwarnx(_("invalid user name: %s"), name);
+ 		return 0;
+ 	}
+-	e->num = pwd->pw_uid;
++	e->num = (int) pwd->pw_uid;
+ 	return 1;
+ }
+ 
+@@ -297,7 +297,7 @@ static int conv_gid (const char *restrict name, struct el *restrict e)
+ 		xwarnx(_("invalid group name: %s"), name);
+ 		return 0;
+ 	}
+-	e->num = grp->gr_gid;
++	e->num = (int) grp->gr_gid;
+ 	return 1;
+ }
+ 

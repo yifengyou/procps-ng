@@ -1,0 +1,147 @@
+diff --git a/vmstat.8 b/vmstat.8
+index fa0938c..fd1078f 100644
+--- a/vmstat.8
++++ b/vmstat.8
+@@ -87,6 +87,9 @@ Display version information and exit.
+ .TP
+ \fB\-h\fR, \fB\-\-help\fR
+ Display help and exit.
++.TP
++\fB\-y\fR, \fB\-\-no-first\fR
++Omits first report with statistics since system boot.
+ .PD
+ .SH "FIELD DESCRIPTION FOR VM MODE"
+ .SS
+diff --git a/vmstat.c b/vmstat.c
+index f2aa2f4..07496cd 100644
+--- a/vmstat.c
++++ b/vmstat.c
+@@ -75,6 +75,9 @@ static int a_option;
+ /* "-w" means "wide output" */
+ static int w_option;
+ 
++/* "-y" means "skip first output" */
++static int y_option;
++
+ /* "-t" means "show timestamp" */
+ static int t_option;
+ 
+@@ -104,6 +107,7 @@ static void __attribute__ ((__noreturn__))
+ 	fputs(_(" -S, --unit <char>      define display unit\n"), out);
+ 	fputs(_(" -w, --wide             wide output\n"), out);
+ 	fputs(_(" -t, --timestamp        show timestamp\n"), out);
++	fputs(_(" -y, --no-first         skips first line of output\n"), out);
+ 	fputs(USAGE_SEPARATOR, out);
+ 	fputs(USAGE_HELP, out);
+ 	fputs(USAGE_VERSION, out);
+@@ -304,43 +308,47 @@ static void new_format(void)
+ 		cpu_zzz, pgpgin, pgpgout, pswpin, pswpout, intr, ctxt, &running,
+ 		&blocked, &dummy_1, &dummy_2);
+ 
+-	if (t_option) {
+-		(void) time( &the_time );
+-		tm_ptr = localtime( &the_time );
+-		strftime(timebuf, sizeof(timebuf), "%Y-%m-%d %H:%M:%S", tm_ptr);
+-	}
++	if (y_option == 0) {
++		if (t_option) {
++			(void) time( &the_time );
++			tm_ptr = localtime( &the_time );
++			 strftime(timebuf, sizeof(timebuf), "%Y-%m-%d %H:%M:%S", tm_ptr);
++		}
+ 
+-	duse = *cpu_use + *cpu_nic;
+-	dsys = *cpu_sys + *cpu_xxx + *cpu_yyy;
+-	didl = *cpu_idl;
+-	diow = *cpu_iow;
+-	dstl = *cpu_zzz;
+-	Div = duse + dsys + didl + diow + dstl;
+-	if (!Div) Div = 1, didl = 1;
+-	divo2 = Div / 2UL;
+-	printf(w_option ? wide_format : format,
+-	       running, blocked,
+-	       unitConvert(kb_swap_used), unitConvert(kb_main_free),
+-	       unitConvert(a_option?kb_inactive:kb_main_buffers),
+-	       unitConvert(a_option?kb_active:kb_main_cached),
+-	       (unsigned)( (unitConvert(*pswpin  * kb_per_page) * hz + divo2) / Div ),
+-	       (unsigned)( (unitConvert(*pswpout * kb_per_page) * hz + divo2) / Div ),
+-	       (unsigned)( (*pgpgin		   * hz + divo2) / Div ),
+-	       (unsigned)( (*pgpgout		   * hz + divo2) / Div ),
+-	       (unsigned)( (*intr		   * hz + divo2) / Div ),
+-	       (unsigned)( (*ctxt		   * hz + divo2) / Div ),
+-	       (unsigned)( (100*duse			+ divo2) / Div ),
+-	       (unsigned)( (100*dsys			+ divo2) / Div ),
+-	       (unsigned)( (100*didl			+ divo2) / Div ),
+-	       (unsigned)( (100*diow			+ divo2) / Div ),
+-	       (unsigned)( (100*dstl			+ divo2) / Div )
+-	);
++		duse = *cpu_use + *cpu_nic;
++		dsys = *cpu_sys + *cpu_xxx + *cpu_yyy;
++		didl = *cpu_idl;
++		diow = *cpu_iow;
++		dstl = *cpu_zzz;
++		Div = duse + dsys + didl + diow + dstl;
++		if (!Div) Div = 1, didl = 1;
++		divo2 = Div / 2UL;
++		printf(w_option ? wide_format : format,
++		       running, blocked,
++		       unitConvert(kb_swap_used), unitConvert(kb_main_free),
++		       unitConvert(a_option?kb_inactive:kb_main_buffers),
++		       unitConvert(a_option?kb_active:kb_main_cached),
++		       (unsigned)( (unitConvert(*pswpin  * kb_per_page) * hz + divo2) / Div ),
++		       (unsigned)( (unitConvert(*pswpout * kb_per_page) * hz + divo2) / Div ),
++		       (unsigned)( (*pgpgin		   * hz + divo2) / Div ),
++		       (unsigned)( (*pgpgout		   * hz + divo2) / Div ),
++		       (unsigned)( (*intr		   * hz + divo2) / Div ),
++		       (unsigned)( (*ctxt		   * hz + divo2) / Div ),
++		       (unsigned)( (100*duse			+ divo2) / Div ),
++		       (unsigned)( (100*dsys			+ divo2) / Div ),
++		       (unsigned)( (100*didl			+ divo2) / Div ),
++		       (unsigned)( (100*diow			+ divo2) / Div ),
++		       (unsigned)( (100*dstl			+ divo2) / Div )
++		);
+ 
+-	if (t_option) {
+-		printf(" %s", timebuf);
+-	}
++		if (t_option) {
++			printf(" %s", timebuf);
++		}
+ 
+-	printf("\n");
++		printf("\n");
++	}
++	else
++		num_updates++;
+ 
+ 	/* main loop */
+ 	for (i = 1; infinite_updates || i < num_updates; i++) {
+@@ -865,6 +873,7 @@ int main(int argc, char *argv[])
+ 		{"timestamp", no_argument, NULL, 't'},
+ 		{"help", no_argument, NULL, 'h'},
+ 		{"version", no_argument, NULL, 'V'},
++		{"no-first", no_argument, NULL, 'y'},
+ 		{NULL, 0, NULL, 0}
+ 	};
+ 
+@@ -877,7 +886,7 @@ int main(int argc, char *argv[])
+ 	atexit(close_stdout);
+ 
+ 	while ((c =
+-		getopt_long(argc, argv, "afmnsdDp:S:wthV", longopts,
++		getopt_long(argc, argv, "afmnsdDp:S:wthVy", longopts,
+ 			    NULL)) != EOF)
+ 		switch (c) {
+ 		case 'V':
+@@ -946,6 +955,11 @@ int main(int argc, char *argv[])
+ 		case 't':
+ 			t_option = 1;
+ 			break;
++		case 'y':
++			/* Don't display stats since system restart */
++			y_option = 1;
++			break;
++
+ 		default:
+ 			/* no other aguments defined yet. */
+ 			usage(stderr);

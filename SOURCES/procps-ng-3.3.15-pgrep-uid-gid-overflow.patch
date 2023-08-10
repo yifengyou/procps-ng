@@ -1,0 +1,57 @@
+diff -up ./pgrep.c.ori ./pgrep.c
+--- ./pgrep.c.ori	2022-08-17 15:38:29.655530551 +0200
++++ ./pgrep.c	2022-08-17 15:38:53.702661752 +0200
+@@ -204,8 +204,12 @@ static int strict_atol (const char *rest
+ 
+ 	for ( ; *str; ++str) {
+ 		if (! isdigit (*str))
+-			return (0);
++			return 0;
++		if (res >= LONG_MAX / 10)
++			return 0;
+ 		res *= 10;
++		if (res >= LONG_MAX - (*str - '0'))
++			return 0;
+ 		res += *str - '0';
+ 	}
+ 	*value = sign * res;
+@@ -280,7 +284,7 @@ static int conv_uid (const char *restric
+ 		xwarnx(_("invalid user name: %s"), name);
+ 		return 0;
+ 	}
+-	e->num = (int) pwd->pw_uid;
++	e->num = pwd->pw_uid;
+ 	return 1;
+ }
+ 
+@@ -297,7 +301,7 @@ static int conv_gid (const char *restric
+ 		xwarnx(_("invalid group name: %s"), name);
+ 		return 0;
+ 	}
+-	e->num = (int) grp->gr_gid;
++	e->num = grp->gr_gid;
+ 	return 1;
+ }
+ 
+diff -up ./proc/readproc.h.ori ./proc/readproc.h
+--- ./proc/readproc.h.ori	2018-05-19 00:04:15.218532055 +0200
++++ ./proc/readproc.h	2022-08-17 15:38:53.702661752 +0200
+@@ -159,12 +159,12 @@ typedef struct proc_t {
+ 	session,	// stat            session id
+ 	nlwp,		// stat,status     number of threads, or 0 if no clue
+ 	tgid,		// (special)       thread group ID, the POSIX PID (see also: tid)
+-	tty,		// stat            full device number of controlling terminal
+-	/* FIXME: int uids & gids should be uid_t or gid_t from pwd.h */
+-        euid, egid,     // stat(),status   effective
+-        ruid, rgid,     // status          real
+-        suid, sgid,     // status          saved
+-        fuid, fgid,     // status          fs (used for file access only)
++	tty;		// stat            full device number of controlling terminal
++    uid_t euid; gid_t egid; // stat(),status effective
++    uid_t ruid; gid_t rgid; // status        real
++    uid_t suid; gid_t sgid; // status        saved
++    uid_t fuid; gid_t fgid; // status        fs (used for file access only)
++    int
+ 	tpgid,		// stat            terminal process group id
+ 	exit_signal,	// stat            might not be SIGCHLD
+ 	processor;      // stat            current (or most recent?) CPU
